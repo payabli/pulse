@@ -24,6 +24,10 @@ export interface Alert {
   aiDetected?: boolean;
   aiExplanation?: string;
   signalConfidence?: "high" | "medium";
+  trendData?: number[];
+  projectedData?: number[];
+  threshold?: number;
+  metricLabel?: string;
 }
 
 export const alertsData: Alert[] = [

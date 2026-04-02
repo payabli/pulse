@@ -4,11 +4,13 @@ import TopBar from "@/components/TopBar";
 import DashboardView from "@/components/DashboardView";
 import PulseCenterView from "@/components/PulseCenterView";
 import PulseSettingsView from "@/components/PulseSettingsView";
+import NotificationFailuresView from "@/components/NotificationFailuresView";
 
 const viewBreadcrumbs: Record<string, { label: string; active?: boolean }[]> = {
   dashboard: [{ label: "Home" }, { label: "Dashboard", active: true }],
   pulse: [{ label: "Intelligence" }, { label: "Pulse center", active: true }],
   "pulse-settings": [{ label: "Intelligence" }, { label: "Pulse settings", active: true }],
+  "notification-failures": [{ label: "Intelligence" }, { label: "Notifications", active: true }],
 };
 
 export default function Index() {
@@ -41,7 +43,8 @@ export default function Index() {
               <PulseCenterView initialSelectedAlert={selectedAlertId} />
             )}
             {activeView === "pulse-settings" && <PulseSettingsView />}
-            {!["dashboard", "pulse", "pulse-settings"].includes(activeView) && (
+            {activeView === "notification-failures" && <NotificationFailuresView />}
+            {!["dashboard", "pulse", "pulse-settings", "notification-failures"].includes(activeView) && (
               <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                 <div className="text-center">
                   <div className="text-lg font-semibold text-foreground mb-1">{activeView.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</div>

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import {
-  LayoutDashboard, Briefcase, ArrowDownToLine, FileText, Users,
-  ArrowUpFromLine, Store, Settings, Code2, Brain, Activity,
-  Zap, ChevronDown, ChevronRight, HelpCircle, CreditCard
+  LayoutDashboard, Settings, Activity,
+  Zap, ChevronDown, ChevronRight, Wifi
 } from "lucide-react";
 
 interface NavItem {
@@ -18,35 +17,6 @@ const navSections: { title: string; isPulse?: boolean; items: NavItem[] }[] = [
     title: "",
     items: [
       { label: "Dashboard", icon: LayoutDashboard, path: "dashboard" },
-      {
-        label: "Portfolio", icon: Briefcase,
-        children: [
-          { label: "All merchants", path: "portfolio" },
-          { label: "Onboarding", path: "onboarding" },
-        ],
-      },
-    ],
-  },
-  {
-    title: "Pay In",
-    items: [
-      { label: "Reports", icon: FileText, children: [{ label: "Transactions", path: "payin-transactions" }, { label: "Settlements", path: "payin-settlements" }] },
-      { label: "Customers", icon: Users, path: "customers" },
-    ],
-  },
-  {
-    title: "Pay Out",
-    items: [
-      { label: "Reports", icon: FileText, children: [{ label: "Payouts", path: "payout-reports" }] },
-      { label: "Vendors", icon: Store, path: "vendors" },
-    ],
-  },
-  {
-    title: "Pay Ops",
-    items: [
-      { label: "Billing Center", icon: CreditCard, path: "billing" },
-      { label: "Risk Center", icon: Settings, path: "risk" },
-      { label: "Developers", icon: Code2, path: "developers" },
     ],
   },
   {
@@ -54,6 +24,7 @@ const navSections: { title: string; isPulse?: boolean; items: NavItem[] }[] = [
     isPulse: true,
     items: [
       { label: "Pulse center", icon: Activity, path: "pulse", badge: 3 },
+      { label: "Notifications", icon: Wifi, path: "notification-failures" },
       { label: "Pulse settings", icon: Settings, path: "pulse-settings" },
     ],
   },

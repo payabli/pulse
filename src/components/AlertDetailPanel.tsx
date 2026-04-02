@@ -8,6 +8,7 @@ import { type Alert } from "@/data/alertsData";
 import { resolutionInsights } from "@/data/mlData";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { LineChart, Line, XAxis, YAxis, ReferenceLine, ResponsiveContainer, Area, ComposedChart } from "recharts";
 
 interface AlertDetailPanelProps {
   alert: Alert;
@@ -302,12 +303,14 @@ export default function AlertDetailPanel({ alert, onClose, onResolve, onDismiss,
           </div>
         )}
 
-        {/* Watch alert note */}
-        {alert.status === "watch" && (
-          <div className="bg-status-watch-bg border border-status-watch-border rounded-md p-2.5 text-[11px] text-status-watch-text mb-3 flex items-start gap-2">
-            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-            This is a proactive signal based on historical patterns — no hold has been placed.
-          </div>
+        {/* Predictive trend chart */}
+        {alert.trendData && alert.projectedData && alert.threshold != null && (
+          <TrendChart
+            trendData={alert.trendData}
+            projectedData={alert.projectedData}
+            threshold={alert.threshold}
+            metricLabel={alert.metricLabel || "Rate (%)"}
+          />
         )}
 
         {alert.details.actionLabel && alert.status !== "resolved" && (
@@ -555,6 +558,113 @@ function FixEndpointStep({ alert, testResult, onTest }: {
           Confirming will replay all {alert.details.metadata?.["Queued events"]} queued events to the restored endpoint.
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Predictive trend chart ──
+function TrendChart({ trendData, projectedData, threshold, metricLabel }: {
+  trendData: number[];
+  projectedData: number[];
+  threshold: number;
+  metricLabel: string;
+}) {
+  const chartData = [
+    ...trendData.map((val, i) => ({
+      day: i - trendData.length + 1,
+      label: `D${i - trendData.length + 1}`,
+      actual: val,
+      projected: null as number | null,
+    })),
+    ...projectedData.map((val, i) => ({
+      day: i + 1,
+      label: `D+${i + 1}`,
+      actual: null as number | null,
+      projected: val,
+    })),
+  ];
+  // Bridge: last actual point also appears as first projected point
+  chartData[trendData.length - 1].projected = trendData[trendData.length - 1];
+
+  const allValues = [...trendData, ...projectedData, threshold];
+  const maxY = Math.ceil(Math.max(...allValues) * 1.15);
+
+  return (
+    <div className="mb-3">
+      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+        {metricLabel} — 14d trend + 7d forecast
+      </div>
+      <div className="bg-muted/30 border border-border rounded-md p-2.5">
+        <ResponsiveContainer width="100%" height={120}>
+          <ComposedChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
+              tickLine={false}
+              axisLine={false}
+              interval={2}
+            />
+            <YAxis
+              domain={[0, maxY]}
+              tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }}
+              tickLine={false}
+              axisLine={false}
+              width={30}
+            />
+            <ReferenceLine
+              y={threshold}
+              stroke="hsl(var(--destructive))"
+              strokeDasharray="4 3"
+              strokeWidth={1.5}
+              label={{
+                value: `${threshold}% threshold`,
+                position: "right",
+                fontSize: 8,
+                fill: "hsl(var(--destructive))",
+              }}
+            />
+            {/* Projected area fill */}
+            <Area
+              dataKey="projected"
+              fill="hsl(var(--status-watch))"
+              fillOpacity={0.12}
+              stroke="none"
+              connectNulls={false}
+            />
+            {/* Actual line */}
+            <Line
+              dataKey="actual"
+              stroke="hsl(var(--foreground))"
+              strokeWidth={2}
+              dot={false}
+              connectNulls={false}
+            />
+            {/* Projected line */}
+            <Line
+              dataKey="projected"
+              stroke="hsl(var(--status-watch))"
+              strokeWidth={2}
+              strokeDasharray="4 3"
+              dot={false}
+              connectNulls={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+        <div className="flex items-center justify-center gap-4 mt-1">
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-0.5 bg-foreground rounded" />
+            <span className="text-[8px] text-muted-foreground">Historical</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-0.5 bg-status-watch rounded" style={{ borderTop: "1px dashed" }} />
+            <span className="text-[8px] text-muted-foreground">Projected</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-0.5 bg-destructive rounded" style={{ borderTop: "1px dashed" }} />
+            <span className="text-[8px] text-muted-foreground">Threshold</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

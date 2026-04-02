@@ -1,6 +1,6 @@
 import MetricCard from "./MetricCard";
 import AlertBanner from "./AlertBanner";
-import PortfolioDigest from "./PortfolioDigest";
+import MerchantHealthCards from "./MerchantHealthCards";
 import { useMetricsSummary } from "@/hooks/useDashboardData";
 import type { MetricValue } from "@/types/api";
 
@@ -59,42 +59,33 @@ export default function DashboardView({ onNavigate, onSelectAlert }: DashboardVi
   return (
     <div>
       {/* Header */}
-      <div className="px-4 pt-3 pb-2 bg-card border-b border-border/50">
-        <h2 className="text-sm font-semibold text-foreground">Pulse Dashboard</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">Here you can review the health of your payment business.</p>
-      </div>
-
-      {/* Time range */}
-      <div className="flex justify-end px-4 py-2">
+      <div className="px-4 pt-3 pb-2 bg-card border-b border-border/50 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">Dashboard</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Portfolio performance overview</p>
+        </div>
         <div className="border border-border rounded-md px-3 py-1 text-[11px] text-foreground bg-card flex items-center gap-2">
-          <span className="text-muted-foreground">Time Range</span>
           <span className="font-medium">{data?.period.label || "Month to Date"}</span>
           {periodLabel && <span className="text-muted-foreground">{periodLabel}</span>}
         </div>
       </div>
 
-      {/* Alert banner */}
-      <AlertBanner onNavigate={onNavigate} onSelectAlert={onSelectAlert} />
-
-      {/* Portfolio Intelligence Digest */}
-      <PortfolioDigest />
-
-      {/* Loading / Error states */}
+      {/* Loading / Error */}
       {isLoading && (
-        <div className="px-4 mt-4">
-          <div className="text-xs text-muted-foreground animate-pulse">Loading live metrics...</div>
+        <div className="px-4 py-6 text-center">
+          <div className="text-xs text-muted-foreground animate-pulse">Loading metrics...</div>
         </div>
       )}
       {error && (
-        <div className="px-4 mt-4">
+        <div className="px-4 py-4">
           <div className="text-xs text-destructive">Failed to load metrics: {(error as Error).message}</div>
         </div>
       )}
 
-      {/* Pay In metrics */}
+      {/* Metrics */}
       {data && (
         <>
-          <div className="px-4 mt-4">
+          <div className="px-4 pt-4">
             <div className="text-xs font-semibold text-foreground mb-2">Pay In</div>
             <div className="grid grid-cols-4 gap-2">
               <MetricCardFromData label="Transaction Volume" metric={data.payIn.transactionVolume} isCurrency />
@@ -104,8 +95,7 @@ export default function DashboardView({ onNavigate, onSelectAlert }: DashboardVi
             </div>
           </div>
 
-          {/* Pay Out metrics */}
-          <div className="px-4 mt-4 pb-4">
+          <div className="px-4 mt-3">
             <div className="text-xs font-semibold text-foreground mb-2">Pay Out</div>
             <div className="grid grid-cols-4 gap-2">
               <MetricCardFromData label="Transaction Volume" metric={data.payOut.transactionVolume} isCurrency />
@@ -116,6 +106,19 @@ export default function DashboardView({ onNavigate, onSelectAlert }: DashboardVi
           </div>
         </>
       )}
+
+      {/* Alerts */}
+      <div className="mt-4">
+        <AlertBanner onNavigate={onNavigate} onSelectAlert={onSelectAlert} />
+      </div>
+
+      {/* Merchant Health */}
+      <div className="mt-1 pb-4">
+        <MerchantHealthCards onFilterMerchant={(paypoint) => {
+          onSelectAlert(paypoint);
+          onNavigate("pulse");
+        }} />
+      </div>
     </div>
   );
 }

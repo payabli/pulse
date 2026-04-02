@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MoreVertical, Eye, Zap, X, Search, Download, Filter, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { MoreVertical, Eye, Zap, X, Search, Download, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
 import { alertsData, categoryBadgeMap, statusBadgeMap, type Alert, type AlertStatus } from "@/data/alertsData";
 import { predictiveAlerts } from "@/data/mlData";
 import AlertDetailPanel from "./AlertDetailPanel";
@@ -27,12 +27,15 @@ const watchAlerts: Alert[] = predictiveAlerts.map((pa) => ({
   statusLabel: "Watch",
   time: pa.time,
   timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
+  trendData: pa.trendData,
+  projectedData: pa.projectedData,
+  threshold: pa.threshold,
+  metricLabel: pa.metricLabel,
   details: {
     description: `${pa.subtitle}'s ${pa.metricLabel.toLowerCase()} is trending upward and may cross the ${pa.threshold}% threshold within 7 days based on current trajectory.`,
     severity: "warning" as const,
     actionLabel: "Monitor this merchant",
     actionType: "view" as const,
-    context: "This is a proactive signal based on historical patterns — no hold has been placed.",
     metadata: {
       "Current value": `${pa.trendData[pa.trendData.length - 1]}%`,
       "Threshold": `${pa.threshold}%`,
@@ -115,12 +118,11 @@ export default function PulseCenterView({ initialSelectedAlert }: PulseCenterVie
   const actionCount = alerts.filter((a) => a.status === "action_needed").length;
   const resolvedCount = alerts.filter((a) => a.status === "resolved").length;
   const watchCount = alerts.filter((a) => a.status === "watch").length;
-  const credAlert = alerts.find((a) => a.category === "credential" && a.status !== "dismissed");
 
   const filterTabs: { key: FilterTab; label: string; count?: number }[] = [
-    { key: "all", label: "All alerts" },
+    { key: "all", label: "All signals" },
     { key: "action_needed", label: "Action needed", count: actionCount },
-    { key: "watch", label: "Watch", count: watchCount },
+    { key: "watch", label: "Predictive", count: watchCount },
     { key: "no_action", label: "No action needed" },
     { key: "resolved", label: "Resolved" },
   ];
@@ -159,7 +161,7 @@ export default function PulseCenterView({ initialSelectedAlert }: PulseCenterVie
       <div className="px-4 pt-3 pb-2 bg-card border-b border-border flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-foreground">Pulse center</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">Resolve issues directly — no navigation required</p>
+          <p className="text-xs text-muted-foreground mt-0.5">ML-powered predictive signals and portfolio alerts</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -210,7 +212,7 @@ export default function PulseCenterView({ initialSelectedAlert }: PulseCenterVie
             <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search alerts..."
+              placeholder="Search signals..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-7 pr-2 py-1.5 border border-border rounded-md text-[11px] bg-card text-foreground w-40 outline-none focus:border-ring"
@@ -231,9 +233,9 @@ export default function PulseCenterView({ initialSelectedAlert }: PulseCenterVie
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-5 gap-2 px-4 py-3">
+      <div className="grid grid-cols-4 gap-2 px-4 py-3">
         <div className="bg-card border border-border rounded-lg p-2.5">
-          <div className="text-[10px] text-muted-foreground">Alerts this week</div>
+          <div className="text-[10px] text-muted-foreground">Signals this week</div>
           <div className="text-lg font-bold text-foreground">{statsAll.length}</div>
           <div className="text-[10px] text-muted-foreground">{actionCount + alerts.filter(a => a.status === "no_action").length} unresolved</div>
         </div>
@@ -243,19 +245,16 @@ export default function PulseCenterView({ initialSelectedAlert }: PulseCenterVie
           <div className="text-[10px] text-muted-foreground">Needs attention</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-2.5">
-          <div className="text-[10px] text-muted-foreground">Watch signals</div>
+          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <Sparkles className="w-2.5 h-2.5" /> Predictive signals
+          </div>
           <div className="text-lg font-bold text-status-watch">{watchCount}</div>
-          <div className="text-[10px] text-muted-foreground">Predictive</div>
+          <div className="text-[10px] text-muted-foreground">ML-detected trends</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-2.5">
           <div className="text-[10px] text-muted-foreground">Resolved</div>
           <div className="text-lg font-bold text-status-success">{resolvedCount}</div>
           <div className="text-[10px] text-muted-foreground">This week</div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-2.5">
-          <div className="text-[10px] text-muted-foreground">Credential expiry</div>
-          <div className="text-lg font-bold text-status-warning">{credAlert ? "18d" : "—"}</div>
-          <div className="text-[10px] text-muted-foreground">{credAlert ? "REST API Token" : "No upcoming"}</div>
         </div>
       </div>
 
@@ -264,14 +263,14 @@ export default function PulseCenterView({ initialSelectedAlert }: PulseCenterVie
         {/* Table */}
         <div>
           <div className="grid grid-cols-[28px_1fr_100px_80px_70px_120px_50px_36px] gap-0 px-3 pb-1.5 border-b border-border mb-0">
-            {["", "Alert", "Category", "Merchant", "Amount", "Status", "Time", ""].map((h, i) => (
+            {["", "Signal", "Category", "Merchant", "Amount", "Status", "Time", ""].map((h, i) => (
               <span key={i} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1">{h}</span>
             ))}
           </div>
 
           <div className="bg-card border border-border rounded-lg overflow-visible">
             {displayRows.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground text-xs">No alerts match this filter</div>
+              <div className="py-8 text-center text-muted-foreground text-xs">No signals match this filter</div>
             ) : (
               displayRows.map((row) => {
                 if (row.type === "group") {
@@ -291,7 +290,7 @@ export default function PulseCenterView({ initialSelectedAlert }: PulseCenterVie
                           <div className="flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${groupStatus.dot}`} />
                             <div>
-                              <div className="text-xs font-semibold text-foreground">{row.alerts.length} alerts — {row.merchant}</div>
+                              <div className="text-xs font-semibold text-foreground">{row.alerts.length} signals — {row.merchant}</div>
                               <div className="flex items-center gap-1 mt-0.5">
                                 {categories.map((cat) => (
                                   <span key={cat} className="text-[9px] px-1.5 py-0 rounded-full bg-muted text-muted-foreground">{cat}</span>
@@ -447,7 +446,7 @@ function AlertRow({
                 onClick={() => { onDismiss(alert.id); setOpenDropdown(null); }}
                 className="w-full text-left px-3 py-2 text-xs text-destructive hover:bg-status-danger-bg flex items-center gap-2 rounded-b-lg"
               >
-                <X className="w-3 h-3" /> Dismiss alert
+                <X className="w-3 h-3" /> Dismiss signal
               </button>
             )}
           </div>
